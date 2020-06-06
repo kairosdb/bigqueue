@@ -6,6 +6,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Random;
 
+import com.leansoft.bigqueue.utils.SystemClockImpl;
 import org.junit.Test;
 
 import com.leansoft.bigqueue.TestUtil;
@@ -17,7 +18,7 @@ public class LRUCacheTest {
 	@Test
 	public void singleThreadTest() {
 		
-		ILRUCache<Integer, TestObject> cache = new LRUCacheImpl<Integer, TestObject>();
+		ILRUCache<Integer, TestObject> cache = new LRUCacheImpl<Integer, TestObject>(new SystemClockImpl());
 		
 		TestObject obj = new TestObject();
 		cache.put(1, obj, 500);
@@ -91,7 +92,7 @@ public class LRUCacheTest {
 	
 	@Test
 	public void multiThreadsTest() {
-		ILRUCache<Integer, TestObject> cache = new LRUCacheImpl<Integer, TestObject>();
+		ILRUCache<Integer, TestObject> cache = new LRUCacheImpl<Integer, TestObject>(new SystemClockImpl());
 		int threadNum = 100;
 		
 		Worker[] workers = new Worker[threadNum];
@@ -117,7 +118,7 @@ public class LRUCacheTest {
 		
 		assertTrue(cache.size() == 0);
 		
-		cache = new LRUCacheImpl<Integer, TestObject>();
+		cache = new LRUCacheImpl<Integer, TestObject>(new SystemClockImpl());
 		threadNum = 100;
 		
 		RandomWorker[] randomWorkers = new RandomWorker[threadNum];

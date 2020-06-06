@@ -15,6 +15,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.leansoft.bigqueue.utils.Clock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +46,10 @@ public class LRUCacheImpl<K, V extends Closeable> implements ILRUCache<K, V> {
 	private static final ExecutorService executorService = Executors.newCachedThreadPool();
 	
 	private final Set<K> keysToRemove = new HashSet<K>();
-	
-	public LRUCacheImpl() {
+	private final Clock clock;
+
+	public LRUCacheImpl(Clock clock) {
+		this.clock = clock;
 		map = new HashMap<K, V>();
 		ttlMap = new HashMap<K, TTLValue>();
 	}
@@ -70,7 +73,7 @@ public class LRUCacheImpl<K, V extends Closeable> implements ILRUCache<K, V> {
 				valuesToClose.remove(value);
 			}
 			map.put(key, value);
-			TTLValue ttl = new TTLValue(System.currentTimeMillis(), ttlInMilliSeconds);
+			TTLValue ttl = new TTLValue(clock.getTime(), ttlInMilliSeconds);
 			ttl.refCount.incrementAndGet();
 			ttlMap.put(key, ttl);
 		} finally {
@@ -99,7 +102,7 @@ public class LRUCacheImpl<K, V extends Closeable> implements ILRUCache<K, V> {
 		Collection<V> valuesToClose = null;
 		keysToRemove.clear();
 		Set<K> keys = ttlMap.keySet();
-		long currentTS = System.currentTimeMillis();
+		long currentTS = clock.getTime();
 		for(K key: keys) {
 			TTLValue ttl = ttlMap.get(key);
 			if (ttl.refCount.get() <= 0 && (currentTS - ttl.lastAccessedTimestamp.get()) > ttl.ttl) { // remove object with no reference and expired
@@ -126,7 +129,7 @@ public class LRUCacheImpl<K, V extends Closeable> implements ILRUCache<K, V> {
 			if (ttl != null) {
 				// Since the resource is acquired by calling thread,
 				// let's update last accessed timestamp and increment reference counting
-				ttl.lastAccessedTimestamp.set(System.currentTimeMillis());
+				ttl.lastAccessedTimestamp.set(clock.getTime());
 				ttl.refCount.incrementAndGet();
 			}
 			return map.get(key);

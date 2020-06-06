@@ -6,8 +6,8 @@ import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.After;
 import org.junit.Test;
 
@@ -208,27 +208,28 @@ public class BigQueueUnitTest {
     @Test
     public void testIfFutureIsCompletedAtEnqueueAndListenersAreCalled() throws Exception {
         bigQueue = new BigQueueImpl(testDir, "testIfFutureIsCompletedAtEnqueueAndListenersAreCalled", BigArrayImpl.MINIMUM_DATA_PAGE_SIZE);
-        Executor executor1 = mock(Executor.class);
-        Executor executor2 = mock(Executor.class);
-        ListenableFuture<byte[]> future = bigQueue.dequeueAsync();
-        future.addListener(mock(Runnable.class), executor1);
-        future.addListener(mock(Runnable.class), executor2);
-
-        verify(executor1, never()).execute(any(Runnable.class));
+        CompletableFuture<byte[]> future = bigQueue.dequeueAsync();
+        Consumer consumer1 = mock(Consumer.class);
+        Consumer consumer2 = mock(Consumer.class);
+        future.thenAccept(consumer1);
+        future.thenAccept(consumer2);
 
         bigQueue.enqueue("test".getBytes());
         bigQueue.enqueue("test2".getBytes());
 
         assertTrue(future.isDone());
         assertEquals("test", new String(future.get()));
-        verify(executor1, times(1)).execute(any(Runnable.class));
-        verify(executor2, times(1)).execute(any(Runnable.class));
+        verify(consumer1, times(1)).accept(any());
+        verify(consumer2, times(1)).accept(any());
 
 
-        ListenableFuture<byte[]> future2 = bigQueue.dequeueAsync();
+        CompletableFuture<byte[]> future2 = bigQueue.dequeueAsync();
 
-        future2.addListener(mock(Runnable.class), executor1);
+        Consumer consumer3 = mock(Consumer.class);
+        future2.thenAccept(consumer3);
         assertTrue(future2.isDone());
+
+        verify(consumer3, times(1)).accept(any());
 
         try {
             byte[] entry = future2.get(5,TimeUnit.SECONDS);
@@ -242,41 +243,41 @@ public class BigQueueUnitTest {
     @Test
     public void testIfFutureIsCompletedIfListenerIsRegisteredLater() throws Exception {
         bigQueue = new BigQueueImpl(testDir, "testIfFutureIsCompletedIfListenerIsRegisteredLater", BigArrayImpl.MINIMUM_DATA_PAGE_SIZE);
-        Executor executor = mock(Executor.class);
         bigQueue.enqueue("test".getBytes());
 
-        ListenableFuture<byte[]> future = bigQueue.dequeueAsync();
+        CompletableFuture<byte[]> future = bigQueue.dequeueAsync();
         assertNotNull(future);
-        future.addListener(mock(Runnable.class), executor);
-        verify(executor).execute(any(Runnable.class));
+        Consumer consumer = mock(Consumer.class);
+        future.thenAccept(consumer);
+        verify(consumer).accept(any());
 
     }
 
     @Test
     public void testIfFutureIsRecreatedAfterDequeue() throws Exception {
         bigQueue = new BigQueueImpl(testDir, "testIfFutureIsRecreatedAfterDequeue", BigArrayImpl.MINIMUM_DATA_PAGE_SIZE);
-        Executor executor = mock(Executor.class);
+        Consumer consumer = mock(Consumer.class);
         bigQueue.enqueue("test".getBytes());
-        ListenableFuture<byte[]> future = bigQueue.dequeueAsync();
+        CompletableFuture<byte[]> future = bigQueue.dequeueAsync();
         assertTrue(future.isDone());
         future = bigQueue.dequeueAsync();
 
         assertFalse(future.isDone());
         assertFalse(future.isCancelled());
 
-        future.addListener(mock(Runnable.class), executor);
+        future.thenAccept(consumer);
 
         bigQueue.enqueue("test".getBytes());
-        verify(executor).execute(any(Runnable.class));
+        verify(consumer).accept(any());
 
     }
 
     @Test
     public void testIfFutureIsCanceledAfterClosing() throws Exception {
         bigQueue = new BigQueueImpl(testDir, "testIfFutureIsCanceledAfterClosing", BigArrayImpl.MINIMUM_DATA_PAGE_SIZE);
-        Executor executor = mock(Executor.class);
-        ListenableFuture<byte[]> future = bigQueue.dequeueAsync();
-        future.addListener(mock(Runnable.class), executor);
+        Consumer consumer = mock(Consumer.class);
+        CompletableFuture<byte[]> future = bigQueue.dequeueAsync();
+        future.thenAccept(consumer);
         bigQueue.close();
         assertTrue(future.isCancelled());
     }
@@ -288,11 +289,11 @@ public class BigQueueUnitTest {
         bigQueue.close();
 
         bigQueue = new BigQueueImpl(testDir, "testIfFutureWorksAfterQueueRecreation", BigArrayImpl.MINIMUM_DATA_PAGE_SIZE);
-        Executor executor = mock(Executor.class);
-        ListenableFuture<byte[]> future = bigQueue.dequeueAsync();
-        future.addListener(mock(Runnable.class), executor);
+        Consumer consumer = mock(Consumer.class);
+        CompletableFuture<byte[]> future = bigQueue.dequeueAsync();
+        future.thenAccept(consumer);
         assertTrue(future.isDone());
-        verify(executor).execute(any(Runnable.class));
+        verify(consumer).accept(any());
 
     }
 
@@ -301,23 +302,23 @@ public class BigQueueUnitTest {
         bigQueue = new BigQueueImpl(testDir, "testIfFutureIsInvalidatedIfAllItemsWhereRemoved", BigArrayImpl.MINIMUM_DATA_PAGE_SIZE);
         bigQueue.enqueue("test".getBytes());
 
-        Executor executor1 = mock(Executor.class);
-        Executor executor2 = mock(Executor.class);
+        Consumer consumer1 = mock(Consumer.class);
+        Consumer consumer2 = mock(Consumer.class);
 
-        ListenableFuture<byte[]> future = bigQueue.dequeueAsync();
-        future.addListener(mock(Runnable.class), executor1);
+        CompletableFuture<byte[]> future = bigQueue.dequeueAsync();
+        future.thenAccept(consumer1);
 
         bigQueue.removeAll();
 
         future = bigQueue.dequeueAsync();
-        future.addListener(mock(Runnable.class), executor2);
+        future.thenAccept(consumer2);
 
-        verify(executor1).execute(any(Runnable.class));
-        verify(executor2, never()).execute(any(Runnable.class));
+        verify(consumer1).accept(any());
+        verify(consumer2, never()).accept(any());
 
         bigQueue.enqueue("test".getBytes());
 
-        verify(executor2).execute(any(Runnable.class));
+        verify(consumer2).accept(any());
     }
 
 
@@ -325,8 +326,8 @@ public class BigQueueUnitTest {
     public void testParallelAsyncDequeueAndPeekOperations() throws Exception {
         bigQueue = new BigQueueImpl(testDir, "testParallelAsyncDequeueAndPeekOperations", BigArrayImpl.MINIMUM_DATA_PAGE_SIZE);
 
-        ListenableFuture<byte[]> dequeueFuture = bigQueue.dequeueAsync();
-        ListenableFuture<byte[]> peekFuture = bigQueue.peekAsync();
+        CompletableFuture<byte[]> dequeueFuture = bigQueue.dequeueAsync();
+        CompletableFuture<byte[]> peekFuture = bigQueue.peekAsync();
 
         bigQueue.enqueue("Test1".getBytes());
 
@@ -344,12 +345,12 @@ public class BigQueueUnitTest {
     @Test
     public void testMultiplePeekAsyncOperations() throws Exception {
         bigQueue = new BigQueueImpl(testDir, "testMultiplePeekAsyncOperations", BigArrayImpl.MINIMUM_DATA_PAGE_SIZE);
-        ListenableFuture<byte[]> peekFuture1 = bigQueue.peekAsync();
+        CompletableFuture<byte[]> peekFuture1 = bigQueue.peekAsync();
 
         bigQueue.enqueue("Test1".getBytes());
 
-        ListenableFuture<byte[]> peekFuture2 = bigQueue.peekAsync();
-        ListenableFuture<byte[]> peekFuture3 = bigQueue.peekAsync();
+        CompletableFuture<byte[]> peekFuture2 = bigQueue.peekAsync();
+        CompletableFuture<byte[]> peekFuture3 = bigQueue.peekAsync();
 
         assertTrue(peekFuture1.isDone());
         assertTrue(peekFuture2.isDone());
@@ -375,11 +376,11 @@ public class BigQueueUnitTest {
         final Semaphore testFlowControl = new Semaphore(2);
         testFlowControl.acquire(2);
 
-        final ListenableFuture<byte[]> future1 = spyBigQueue.dequeueAsync();
+        final CompletableFuture<byte[]> future1 = spyBigQueue.dequeueAsync();
 
         Runnable r = new Runnable() {
             int dequeueCount = 0;
-            ListenableFuture<byte[]> future;
+            CompletableFuture<byte[]> future;
 
             @Override
             public void run() {

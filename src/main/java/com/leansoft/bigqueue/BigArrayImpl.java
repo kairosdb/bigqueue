@@ -4,17 +4,25 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.LongSupplier;
 
+import com.leansoft.bigqueue.metrics.BigArrayStats;
 import com.leansoft.bigqueue.page.IMappedPage;
 import com.leansoft.bigqueue.page.IMappedPageFactory;
 import com.leansoft.bigqueue.page.MappedPageFactoryImpl;
 import com.leansoft.bigqueue.utils.Calculator;
+import com.leansoft.bigqueue.utils.Clock;
 import com.leansoft.bigqueue.utils.FileUtil;
+import com.leansoft.bigqueue.utils.SystemClockImpl;
+import org.kairosdb.metrics4j.MetricSourceManager;
 
 /**
  * A big array implementation supporting sequential append and random read.
@@ -33,7 +41,8 @@ import com.leansoft.bigqueue.utils.FileUtil;
  *
  */
 public class BigArrayImpl implements IBigArray {
-	
+	private final BigArrayStats stats = MetricSourceManager.getSource(BigArrayStats.class);
+
 	// folder name for index page
 	final static String INDEX_PAGE_FOLDER = "index";
 	// folder name for data page
@@ -76,6 +85,8 @@ public class BigArrayImpl implements IBigArray {
 	
 	// directory to persist array data
 	String arrayDirectory;
+
+	final String arrayName;
 	
 	// factory for index page management(acquire, release, cache)
 	IMappedPageFactory indexPageFactory; 
@@ -98,6 +109,8 @@ public class BigArrayImpl implements IBigArray {
 	long headDataPageIndex;
 	// head offset of the data page, this is the to be appended data offset
 	int headDataItemOffset;
+
+	Clock clock = new SystemClockImpl();
 	
 	// lock for appending state management
 	final Lock appendLock = new ReentrantLock();
@@ -105,8 +118,8 @@ public class BigArrayImpl implements IBigArray {
 	// global lock for array read and write management
     final ReadWriteLock arrayReadWritelock = new ReentrantReadWriteLock();
     final Lock arrayReadLock = arrayReadWritelock.readLock();
-    final Lock arrayWriteLock = arrayReadWritelock.writeLock(); 
-	
+    final Lock arrayWriteLock = arrayReadWritelock.writeLock();
+
 	/**
 	 * 
 	 * A big array implementation supporting sequential write and random read,
@@ -135,6 +148,7 @@ public class BigArrayImpl implements IBigArray {
 		}
 		// append array name as part of the directory
 		arrayDirectory = arrayDirectory + arrayName + File.separator;
+		this.arrayName = arrayName;
 		
 		// validate directory
 		if (!FileUtil.isFilenameValid(arrayDirectory)) {
@@ -148,6 +162,20 @@ public class BigArrayImpl implements IBigArray {
 		DATA_PAGE_SIZE = pageSize;
 		
 		this.commonInit();
+
+		//register callback to get array size for stats
+		Map<String, String> tags = new HashMap<>();
+		tags.put("name", arrayName);
+		MetricSourceManager.addSource(BigArrayStats.class.getName(), "arraySize", tags, "Reports size of the array", () -> size());
+	}
+
+	/**
+	 Used for changing the clock for unit tests
+	 @param clock
+	 */
+	public void setClock(Clock clock)
+	{
+		this.clock = clock;
 	}
 	
 	public String getArrayDirectory() {
@@ -285,6 +313,7 @@ public class BigArrayImpl implements IBigArray {
 	 */
 	public long append(byte[] data) throws IOException {
 		try {
+			stats.appendData(arrayName).put(data.length);
 			arrayReadLock.lock(); 
 			IMappedPage toAppendDataPage = null;
 			IMappedPage toAppendIndexPage = null;
@@ -324,7 +353,7 @@ public class BigArrayImpl implements IBigArray {
 				toAppendIndexPageBuffer.putLong(toAppendDataPageIndex);
 				toAppendIndexPageBuffer.putInt(toAppendDataItemOffset);
 				toAppendIndexPageBuffer.putInt(data.length);
-				long currentTime = System.currentTimeMillis();
+				long currentTime = clock.getTime();
 				toAppendIndexPageBuffer.putLong(currentTime);
 				toAppendIndexPage.setDirty(true);
 				
@@ -393,6 +422,7 @@ public class BigArrayImpl implements IBigArray {
 				int dataItemLength = indexItemBuffer.getInt();
 				dataPage = this.dataPageFactory.acquirePage(dataPageIndex);
 				byte[] data = dataPage.getLocal(dataItemOffset, dataItemLength);
+				stats.getData(arrayName).put(data.length);
 				return data;
 			} finally {
 				if (dataPage != null) {
@@ -525,7 +555,7 @@ public class BigArrayImpl implements IBigArray {
 			long tailIndex = this.arrayTailIndex.get();
 			long headIndex = this.arrayHeadIndex.get();
 			if (tailIndex == headIndex) return closestIndex; // empty
-			long lastIndex = headIndex - 1;
+			long lastIndex = headIndex;
 			if (lastIndex < 0) {
 				lastIndex = Long.MAX_VALUE;
 			}
@@ -550,30 +580,38 @@ public class BigArrayImpl implements IBigArray {
 	
 	private long closestBinarySearch(long low, long high, long timestamp) throws IOException {    		
         long mid;
-        long sum = low + high;
+        /*long sum = low + high;
         if (sum < 0) { // overflow
         	BigInteger bigSum = BigInteger.valueOf(low);
         	bigSum = bigSum.add(BigInteger.valueOf(high));
         	mid = bigSum.shiftRight(1).longValue();
         } else {
         	mid = sum / 2;
-        }
+        }*/
+
+        long dif = high - low;
+        mid = (dif / 2) + low;
+		System.out.println(low + " " + mid + " " + high);
         
     	long midTimestamp = this.getTimestamp(mid);
+		System.out.println("mid time "+ midTimestamp +" looking for "+timestamp);
     	
     	if (midTimestamp < timestamp) {
     		long nextLow = mid + 1;
     		if (nextLow >= high) {
-    			return high;
+		      System.out.println(low + " " + mid + " " + high);
+    			return mid;
     		}
-    		return closestBinarySearch(nextLow, high, timestamp);
+    		return closestBinarySearch(mid, high, timestamp);
     	} else if (midTimestamp > timestamp) {
     		long nextHigh = mid - 1;
     		if (nextHigh <= low) {
+		      System.out.println(low + " " + mid + " " + high);
     			return low;
     		}
-    		return closestBinarySearch(low, nextHigh, timestamp);
+    		return closestBinarySearch(low, mid, timestamp);
     	} else {
+	      System.out.println(low + " " + mid + " " + high);
     		return mid;
     	}
 	}

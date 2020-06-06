@@ -1,6 +1,5 @@
 package com.leansoft.bigqueue.page;
 
-import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,9 +8,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
 
+import com.leansoft.bigqueue.TestClock;
+import com.leansoft.bigqueue.TestFileFactory;
+import com.leansoft.bigqueue.utils.FileSystemFileFactory;
 import org.junit.After;
 import org.junit.Test;
 
@@ -21,6 +25,15 @@ import com.leansoft.bigqueue.page.IMappedPageFactory;
 import com.leansoft.bigqueue.page.MappedPageFactoryImpl;
 import com.leansoft.bigqueue.page.MappedPageImpl;
 import com.leansoft.bigqueue.utils.FileUtil;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 public class MappedPageFactoryTest {
 	
@@ -57,8 +70,10 @@ public class MappedPageFactoryTest {
 	
 	@Test
 	public void testSingleThread() throws IOException {
-	
-		mappedPageFactory = new MappedPageFactoryImpl(1024 * 1024 * 128, testDir + "/test_single_thread", 2 * 1000);
+
+		TestClock testClock = new TestClock();
+		TestFileFactory testFileFactory = new TestFileFactory();
+		mappedPageFactory = new MappedPageFactoryImpl(1024 * 1024 * 128, testDir + "/test_single_thread", 2 * 1000, testClock, testFileFactory);
 		
 		IMappedPage mappedPage = mappedPageFactory.acquirePage(0); // first acquire
 		assertNotNull(mappedPage);
@@ -70,10 +85,13 @@ public class MappedPageFactoryTest {
 		
 		mappedPageFactory.releasePage(0); // release first acquire
 		mappedPageFactory.releasePage(0); // release second acquire
-		TestUtil.sleepQuietly(2200);// let page0 expire
+
+		testClock.advanceClock(2200);
+		///TestUtil.sleepQuietly(2200);// let page0 expire
 		mappedPageFactory.acquirePage(2);// trigger mark&sweep and purge old page0
 		mappedPage = mappedPageFactory.acquirePage(0);// create a new page0
 		assertNotSame(mappedPage, mappedPage0);
+		testClock.advanceClock(1000);
 		TestUtil.sleepQuietly(1000);// let the async cleaner do the job
 		assertTrue(!mappedPage.isClosed());
 		assertTrue(mappedPage0.isClosed());
@@ -111,21 +129,25 @@ public class MappedPageFactoryTest {
 		indexSet = mappedPageFactory.getExistingBackFileIndexSet();
 		assertTrue(indexSet.size() == 0);
 		
-		long start = System.currentTimeMillis();
+		//long start = System.currentTimeMillis();
+		long start = testClock.getTime();
 		for(long i = 0; i < 5; i++) {
+			testFileFactory.setLastModified(testDir + "/test_single_thread/page-"+i+".dat", start + (i * 1000L));
 			assertNotNull(this.mappedPageFactory.acquirePage(i));
-			TestUtil.sleepQuietly(1000);
+			//TestUtil.sleepQuietly(1000);
+			testClock.advanceClock(1000);
 		}
+
 		indexSet = mappedPageFactory.getPageIndexSetBefore(start - 1000);
-		assertTrue(indexSet.size() == 0);
+		assertThat(indexSet).hasSize(0);
 		indexSet = mappedPageFactory.getPageIndexSetBefore(start + 2500);
-		assertTrue(indexSet.size() == 3);
+		assertThat(indexSet).hasSize(3);
 		indexSet = mappedPageFactory.getPageIndexSetBefore(start + 5000);
-		assertTrue(indexSet.size() == 5);
-		
+		assertThat(indexSet).hasSize(5);
+
 		mappedPageFactory.deletePagesBefore(start + 2500);
 		indexSet = mappedPageFactory.getExistingBackFileIndexSet();
-		assertTrue(indexSet.size() == 2);
+		assertThat(indexSet).hasSize(2);
 		assertTrue(mappedPageFactory.getCacheSize() == 2);
 		
 		mappedPageFactory.releaseCachedPages();
@@ -133,23 +155,25 @@ public class MappedPageFactoryTest {
 		
 		assertTrue(((MappedPageFactoryImpl)mappedPageFactory).getLockMapSize() == 0);
 		mappedPageFactory.deleteAllPages();
-		
-		start = System.currentTimeMillis();
-		for(int i = 0; i <= 100; i++) {
+
+
+		//start = testClock.getTime();
+		/*start = (System.currentTimeMillis() / 1000) * 1000;
+		for(int i = 0; i < 100; i++) {
 			IMappedPage mappedPageI = mappedPageFactory.acquirePage(i);
 			mappedPageI.getLocal(0).put(("hello " + i).getBytes());
 			mappedPageI.setDirty(true);
-			((MappedPageImpl)mappedPageI).flush();
+			mappedPageI.flush();
 			long currentTime = System.currentTimeMillis();
 			long iPageFileLastModifiedTime = mappedPageFactory.getPageFileLastModifiedTime(i);
-			assertTrue(iPageFileLastModifiedTime >= start);
-			assertTrue(iPageFileLastModifiedTime <= currentTime);
-			
+			assertThat(iPageFileLastModifiedTime).isGreaterThanOrEqualTo(start);
+			assertThat(iPageFileLastModifiedTime).isLessThanOrEqualTo(currentTime);
+
 			long index = mappedPageFactory.getFirstPageIndexBefore(currentTime + 1);
 			assertTrue(index == i);
 			
 			start = currentTime;
-		}
+		}*/
 		
 		mappedPageFactory.deleteAllPages();
 	}

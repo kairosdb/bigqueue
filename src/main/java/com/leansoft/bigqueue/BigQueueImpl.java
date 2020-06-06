@@ -2,15 +2,19 @@ package com.leansoft.bigqueue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
+import com.leansoft.bigqueue.metrics.BigArrayStats;
+import com.leansoft.bigqueue.metrics.BigQueueStats;
 import com.leansoft.bigqueue.page.IMappedPage;
 import com.leansoft.bigqueue.page.IMappedPageFactory;
 import com.leansoft.bigqueue.page.MappedPageFactoryImpl;
+import org.kairosdb.metrics4j.MetricSourceManager;
 
 
 /**
@@ -27,6 +31,7 @@ import com.leansoft.bigqueue.page.MappedPageFactoryImpl;
  */
 public class BigQueueImpl implements IBigQueue {
 
+    private static final BigQueueStats stats = MetricSourceManager.getSource(BigQueueStats.class);
     final IBigArray innerArray;
 
     // 2 ^ 3 = 8
@@ -41,6 +46,7 @@ public class BigQueueImpl implements IBigQueue {
 
     // front index of the big queue,
     final AtomicLong queueFrontIndex = new AtomicLong();
+    private final String queueName;
 
     // factory for queue front index page management(acquire, release, cache)
     IMappedPageFactory queueFrontIndexPageFactory;
@@ -50,8 +56,8 @@ public class BigQueueImpl implements IBigQueue {
 
     // lock for dequeueFuture access
     private final Object futureLock = new Object();
-    private SettableFuture<byte[]> dequeueFuture;
-    private SettableFuture<byte[]> peekFuture;
+    private CompletableFuture<byte[]> dequeueFuture;
+    private CompletableFuture<byte[]> peekFuture;
 
     /**
      * A big, fast and persistent queue implementation,
@@ -76,6 +82,8 @@ public class BigQueueImpl implements IBigQueue {
     public BigQueueImpl(String queueDir, String queueName, int pageSize) throws IOException {
         innerArray = new BigArrayImpl(queueDir, queueName, pageSize);
 
+        this.queueName = queueName;
+
         // the ttl does not matter here since queue front index page is always cached
         this.queueFrontIndexPageFactory = new MappedPageFactoryImpl(QUEUE_FRONT_INDEX_PAGE_SIZE,
                 ((BigArrayImpl) innerArray).getArrayDirectory() + QUEUE_FRONT_INDEX_PAGE_FOLDER,
@@ -85,6 +93,11 @@ public class BigQueueImpl implements IBigQueue {
         ByteBuffer queueFrontIndexBuffer = queueFrontIndexPage.getLocal(0);
         long front = queueFrontIndexBuffer.getLong();
         queueFrontIndex.set(front);
+
+        //register callback to get array size for stats
+        Map<String, String> tags = new HashMap<>();
+        tags.put("name", queueName);
+        MetricSourceManager.addSource(BigQueueStats.class.getName(), "queueSize", tags, "Reports size of the queue", () -> size());
     }
 
     @Override
@@ -130,7 +143,7 @@ public class BigQueueImpl implements IBigQueue {
     }
 
     @Override
-    public ListenableFuture<byte[]> dequeueAsync() {
+    public CompletableFuture<byte[]> dequeueAsync() {
         this.initializeDequeueFutureIfNecessary();
         return dequeueFuture;
     }
@@ -162,7 +175,7 @@ public class BigQueueImpl implements IBigQueue {
     }
 
     @Override
-    public ListenableFuture<byte[]> peekAsync() {
+    public CompletableFuture<byte[]> peekAsync() {
         this.initializePeekFutureIfNecessary();
         return peekFuture;
     }
@@ -214,6 +227,7 @@ public class BigQueueImpl implements IBigQueue {
 
     @Override
     public void gc() throws IOException {
+        stats.gcCount(queueName).put(1);
         long beforeIndex = this.queueFrontIndex.get();
         if (beforeIndex == 0L) { // wrap
             beforeIndex = Long.MAX_VALUE;
@@ -258,16 +272,16 @@ public class BigQueueImpl implements IBigQueue {
         synchronized (futureLock) {
             if (peekFuture != null && !peekFuture.isDone()) {
                 try {
-                    peekFuture.set(this.peek());
+                    peekFuture.complete(this.peek());
                 } catch (IOException e) {
-                    peekFuture.setException(e);
+                    peekFuture.completeExceptionally(e);
                 }
             }
             if (dequeueFuture != null && !dequeueFuture.isDone()) {
                 try {
-                    dequeueFuture.set(this.dequeue());
+                    dequeueFuture.complete(this.dequeue());
                 } catch (IOException e) {
-                    dequeueFuture.setException(e);
+                    dequeueFuture.completeExceptionally(e);
                 }
             }
         }
@@ -279,13 +293,13 @@ public class BigQueueImpl implements IBigQueue {
     private void initializeDequeueFutureIfNecessary() {
         synchronized (futureLock) {
             if (dequeueFuture == null || dequeueFuture.isDone()) {
-                dequeueFuture = SettableFuture.create();
+                dequeueFuture = new CompletableFuture<>();
             }
             if (!this.isEmpty()) {
                 try {
-                    dequeueFuture.set(this.dequeue());
+                    dequeueFuture.complete(this.dequeue());
                 } catch (IOException e) {
-                    dequeueFuture.setException(e);
+                    dequeueFuture.completeExceptionally(e);
                 }
             }
         }
@@ -297,13 +311,13 @@ public class BigQueueImpl implements IBigQueue {
     private void initializePeekFutureIfNecessary() {
         synchronized (futureLock) {
             if (peekFuture == null || peekFuture.isDone()) {
-                peekFuture = SettableFuture.create();
+                peekFuture = new CompletableFuture<>();
             }
             if (!this.isEmpty()) {
                 try {
-                    peekFuture.set(this.peek());
+                    peekFuture.complete(this.peek());
                 } catch (IOException e) {
-                    peekFuture.setException(e);
+                    peekFuture.completeExceptionally(e);
                 }
             }
         }

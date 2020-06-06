@@ -12,6 +12,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.leansoft.bigqueue.utils.Clock;
+import com.leansoft.bigqueue.utils.FileFactory;
+import com.leansoft.bigqueue.utils.FileSystemFileFactory;
+import com.leansoft.bigqueue.utils.SystemClockImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,12 +52,14 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 	public static final String PAGE_FILE_SUFFIX = ".dat";
 	
 	private ILRUCache<Long, MappedPageImpl> cache;
+	private final FileFactory fileFactory;
 	
-	public MappedPageFactoryImpl(int pageSize, String pageDir, long cacheTTL) {
+	public MappedPageFactoryImpl(int pageSize, String pageDir, long cacheTTL, Clock clock, FileFactory fileFactory) {
 		this.pageSize = pageSize;
 		this.pageDir = pageDir;
 		this.ttl = cacheTTL;
-		this.pageDirFile = new File(this.pageDir);
+		this.fileFactory = fileFactory;
+		this.pageDirFile = fileFactory.newFile(this.pageDir);
 		if (!pageDirFile.exists()) {
 			pageDirFile.mkdirs();
 		}
@@ -61,7 +67,12 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 			this.pageDir += File.separator;
 		}
 		this.pageFile = this.pageDir + PAGE_FILE_NAME + "-"; 
-		this.cache = new LRUCacheImpl<Long, MappedPageImpl>();
+		this.cache = new LRUCacheImpl<>(clock);
+	}
+
+	public MappedPageFactoryImpl(int pageSize, String pageDir, long cacheTTL)
+	{
+		this(pageSize, pageDir, cacheTTL, new SystemClockImpl(), new FileSystemFileFactory());
 	}
 
 	public IMappedPage acquirePage(long index) throws IOException {
@@ -172,7 +183,7 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 		boolean deleted = false;
 		while(count < maxRound) {
 			try {
-				FileUtil.deleteFile(new File(fileName));
+				FileUtil.deleteFile(fileFactory.newFile(fileName));
 				deleted = true;
 				break;
 			} catch (IllegalStateException ex) {
@@ -199,7 +210,7 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 		File[] pageFiles = this.pageDirFile.listFiles();
 		if (pageFiles != null && pageFiles.length > 0) {
 			for(File pageFile : pageFiles) {
-				if (pageFile.lastModified() < timestamp) {
+				if (fileFactory.lastModified(pageFile) < timestamp) {
 					String fileName = pageFile.getName();
 					if (fileName.endsWith(PAGE_FILE_SUFFIX)) {
 						long index = this.getIndexByFileName(fileName);
@@ -273,11 +284,11 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 	@Override
 	public long getPageFileLastModifiedTime(long index) {
 		String pageFileName = this.getFileNameByIndex(index);
-		File pageFile = new File(pageFileName);
+		File pageFile = fileFactory.newFile(pageFileName);
 		if (!pageFile.exists()) {
 			return -1L;
 		}
-		return pageFile.lastModified();
+		return fileFactory.lastModified(pageFile);
 	}
 
 	@Override

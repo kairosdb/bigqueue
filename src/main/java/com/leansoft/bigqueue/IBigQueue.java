@@ -1,9 +1,8 @@
 package com.leansoft.bigqueue;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Queue ADT
@@ -44,7 +43,7 @@ public interface IBigQueue extends Closeable {
      *
      * @return a ListenableFuture which completes with the first entry if items are ready to be dequeued.
      */
-    public ListenableFuture<byte[]> dequeueAsync();
+    public CompletableFuture<byte[]> dequeueAsync();
 
 	
 	/**
@@ -69,7 +68,7 @@ public interface IBigQueue extends Closeable {
      *
      * @return a future containing the first item if available. You may register as listener at this future to be informed if a new item arrives.
      */
-    public ListenableFuture<byte[]> peekAsync();
+    public CompletableFuture<byte[]> peekAsync();
 
     /**
      * apply an implementation of a ItemIterator interface for each queue item
