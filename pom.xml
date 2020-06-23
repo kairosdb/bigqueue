@@ -2,19 +2,19 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.leansoft</groupId>
+    <groupId>org.kairosdb</groupId>
     <artifactId>bigqueue</artifactId>
-    <version>0.7.2</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>bigqueue</name>
-    <url>https://github.com/bulldog2011/bigqueue</url>
+    <url>https://github.com/kairosdb/bigqueue</url>
 
     <description>Light, fast and persistent queue.</description>
     <scm>
-        <connection>scm:git:git://github.com/bulldog2011/bigqueue.git</connection>
-        <developerConnection>scm:git:git@github.com:bulldog2011/bigqueue.git</developerConnection>
-        <url>https://github.com/bulldog2011/bigqueue</url>
+        <connection>scm:git:ssh://git@github.com:kairosdb/bigqueue.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:kairosdb/bigqueue.git</developerConnection>
+        <url>https://github.com/kairosdb/bigqueue</url>
     </scm>
     <licenses>
         <license>
@@ -25,6 +25,14 @@
     </licenses>
     <developers>
         <developer>
+            <id>brianhks</id>
+            <name>Brian</name>
+            <email>brianhks1+kairos@gmail.com</email>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
+        <developer>
             <id>51startup</id>
             <name>bulldog</name>
             <email>51startup@sina.com</email>
@@ -34,19 +42,6 @@
             </roles>
         </developer>
     </developers>
-
-    <distributionManagement>
-        <repository>
-            <id>github.release.repo</id>
-            <name>Release Repository</name>
-            <url>file:///dev/bulldog-repo/repo/releases</url>
-        </repository>
-        <snapshotRepository>
-            <id>github.snapshot.repo</id>
-            <name>Snapshot Repository</name>
-            <url>file:///dev/bulldog-repo/repo/snapshots</url>
-        </snapshotRepository>
-    </distributionManagement>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -65,7 +60,6 @@
             <artifactId>metrics4j</artifactId>
             <version>0.7.0</version>
         </dependency>
-
 
         <dependency>
             <groupId>junit</groupId>

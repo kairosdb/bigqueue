@@ -18,6 +18,7 @@ public class MappedPageImpl implements IMappedPage, Closeable {
 	private volatile boolean closed = false;
 	private String pageFile;
 	private long index;
+	private boolean isNew = false;
 	
 	public MappedPageImpl(MappedByteBuffer mbb, String pageFile, long index) {
 		this.threadLocalBuffer = new ThreadLocalByteBuffer(mbb);
@@ -42,10 +43,22 @@ public class MappedPageImpl implements IMappedPage, Closeable {
 			}
 		}
 	}
+
+	public void setNew(boolean isNew)
+	{
+		this.isNew = isNew;
+	}
+
+	@Override
+	public boolean isNew()
+	{
+		return isNew;
+	}
 	
 	@Override
 	public void setDirty(boolean dirty) {
 		this.dirty = dirty;
+		this.isNew = false;
 	}
 	
 	@Override

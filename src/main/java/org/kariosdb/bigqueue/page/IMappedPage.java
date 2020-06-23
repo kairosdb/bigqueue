@@ -33,7 +33,13 @@ public interface IMappedPage {
 	 * @return
 	 */
 	boolean isClosed();
-	
+
+	/**
+	 Is the mapped page new or was it read from disk
+	 @return true if no file on disk existed
+	 */
+	boolean isNew();
+
 	/**
 	 * Set if the mapped page has been changed or not
 	 * 
@@ -58,5 +64,5 @@ public interface IMappedPage {
 	/**
 	 * Persist any changes to disk
 	 */
-	public void flush();
+	void flush();
 }

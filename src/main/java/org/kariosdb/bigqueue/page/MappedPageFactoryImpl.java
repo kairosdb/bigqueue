@@ -90,12 +90,15 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 					if (mpi == null) {
 						RandomAccessFile raf = null;
 						FileChannel channel = null;
+						boolean newIndex = false;
 						try {
 							String fileName = this.getFileNameByIndex(index);
+							newIndex = (!new File(fileName).exists());
 							raf = new RandomAccessFile(fileName, "rw");
 							channel = raf.getChannel();
 							MappedByteBuffer mbb = channel.map(READ_WRITE, 0, this.pageSize);
 							mpi = new MappedPageImpl(mbb, fileName, index);
+							mpi.setNew(newIndex);
 							cache.put(index, mpi, ttl);
 							if (logger.isDebugEnabled()) {
 								logger.debug("Mapped page for " + fileName + " was just created and cached.");

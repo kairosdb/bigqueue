@@ -237,13 +237,7 @@ public class FanOutQueueTest {
 
 		Thread.sleep(1500);
 
-		System.out.println("Before removeBefore "+foQueue.size(fid));
-		System.out.println(foQueue.innerArray.size());
-
 		foQueue.removeBefore(timestamp);
-
-		System.out.println("After removeBefore "+foQueue.size(fid));
-		System.out.println(foQueue.innerArray.size());
 
 		timestamp = System.currentTimeMillis();
 
@@ -254,12 +248,8 @@ public class FanOutQueueTest {
 			foQueue.enqueue(randomString3.getBytes());
 		}
 
-		System.out.println(foQueue.size(fid));
-
 		foQueue.removeBefore(timestamp);
 
-		System.out.println(foQueue.size(fid));
-		
 		//assertTrue(foQueue.size(fid) == 9 * 128 * 1024);
 		assertThat(foQueue.size(fid)).isEqualTo(1024 * 1024);
 		assertEquals(randomString3, new String(foQueue.peek(fid)));
@@ -297,9 +287,7 @@ public class FanOutQueueTest {
 		assertTrue(3 * loop == foQueue.findClosestIndex(IFanOutQueue.LATEST));
 
 		long midIndex1 = foQueue.findClosestIndex(midTs1);
-		System.out.println("mid index = " + midIndex1);
 		long midIndex2 = foQueue.findClosestIndex(midTs2);
-		System.out.println("mid index = " + midIndex2);
 		assertTrue(0L < midIndex1);
 		assertTrue(midIndex1 < midIndex2);
 		assertTrue(3 * loop -1 > midIndex2);
@@ -328,7 +316,6 @@ public class FanOutQueueTest {
 		
 		for(int i = 0; i < loop; i++) {
 			long index = foQueue.findClosestIndex(tsArray[i]);
-			System.out.println(index);
 			assertThat(index).isEqualTo(i);
 		}
 	}
