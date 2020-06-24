@@ -28,7 +28,7 @@ import org.kairosdb.metrics4j.MetricSourceManager;
  * 1. FAST : close to the speed of direct memory access, extremely fast in append only and sequential read modes,
  *           sequential append and read are close to O(1) memory access, random read is close to O(1) memory access if 
  *           data is in cache and is close to O(1) disk access if data is not in cache.
- * 2. MEMORY-EFFICIENT : automatic paging & swapping algorithm, only most-recently accessed data is kept in memory.
+ * 2. MEMORY-EFFICIENT : automatic paging and swapping algorithm, only most-recently accessed data is kept in memory.
  * 3. THREAD-SAFE : multiple threads can concurrently read/append the array without data corruption.
  * 4. PERSISTENT - all array data is persisted on disk, and is crash resistant.
  * 5. BIG(HUGE) - the total size of the array data is only limited by the available disk space.
@@ -168,7 +168,7 @@ public class BigArrayImpl implements IBigArray {
 
 	/**
 	 Used for changing the clock for unit tests
-	 @param clock
+	 @param clock Clock instance to use
 	 */
 	public void setClock(Clock clock)
 	{

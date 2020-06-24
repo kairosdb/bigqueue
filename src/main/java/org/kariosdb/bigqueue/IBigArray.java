@@ -95,7 +95,7 @@ public interface IBigArray extends Closeable {
 	
 	/**
 	 * Remove all data in this array, this will empty the array and delete all back page files.
-	 * 
+	 * @throws IOException exception thrown if IO error occurs durring remove all
 	 */
 	void removeAll() throws IOException;
 	

@@ -51,7 +51,7 @@ public interface ILRUCache<K, V extends Closeable> {
 	 * 
 	 * This call will decrement the reference counter of the keyed resource.
 	 * 
-	 * @param key
+	 * @param key key of resource to release
 	 */
 	public void release(final K key);
 	

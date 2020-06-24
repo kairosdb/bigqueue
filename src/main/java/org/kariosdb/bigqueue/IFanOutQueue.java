@@ -26,8 +26,18 @@ public interface IFanOutQueue extends Closeable {
 	 * @param fanoutId the fanout identifier
 	 * @param useLatest if no offset has been recorded the head of the queue is used
 	 * @return true if empty, false otherwise
+	 * @throws IOException exception thrown if IO error occurs
 	 */
 	boolean isEmpty(String fanoutId, boolean useLatest) throws IOException;
+
+	/**
+	 * Determines whether a fan out queue is empty
+	 *
+	 * @param fanoutId the fanout identifier
+	 * @return true if empty, false otherwise
+	 * @throws IOException exception thrown if IO error occurs
+	 */
+	boolean isEmpty(String fanoutId) throws IOException;
 
 	/**
 	 * Determines whether the queue is empty
@@ -156,6 +166,7 @@ public interface IFanOutQueue extends Closeable {
 	 *
 	 * @param fanoutId the fanout identifier
 	 * @return total number
+	 * @throws IOException exception thrown if IO error occurs
 	 */
 	long size(String fanoutId) throws IOException;
 
@@ -165,6 +176,7 @@ public interface IFanOutQueue extends Closeable {
 	 * @param fanoutId the fanout identifier
 	 * @param useLatest if no offset has been recorded the head of the queue is used
 	 * @return total number
+	 * @throws IOException exception thrown if IO error occurs
 	 */
 	long size(String fanoutId, boolean useLatest) throws IOException;
 
@@ -253,6 +265,7 @@ public interface IFanOutQueue extends Closeable {
 	 *
 	 * @param fanoutId fanout identifier
 	 * @return an index
+	 * @throws IOException exception thrown if IO error occurs
 	 */
 	long getFrontIndex(String fanoutId) throws IOException;
 
@@ -262,6 +275,7 @@ public interface IFanOutQueue extends Closeable {
 	 * @param fanoutId fanout identifier
 	 * @param useLatest if no offset has been recorded the head of the queue is used
 	 * @return an index
+	 * @throws IOException exception thrown if IO error occurs
 	 */
 	long getFrontIndex(String fanoutId, boolean useLatest) throws IOException;
 	

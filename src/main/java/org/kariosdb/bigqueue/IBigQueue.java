@@ -73,8 +73,8 @@ public interface IBigQueue extends Closeable {
     /**
      * apply an implementation of a ItemIterator interface for each queue item
      *
-     * @param iterator
-     * @throws IOException
+     * @param iterator Callback used for each item in array.
+     * @throws IOException exception thrown if IO error occurs
      */
     public void applyForEach(ItemIterator iterator) throws IOException;
 	
@@ -114,7 +114,7 @@ public interface IBigQueue extends Closeable {
          * Method to be executed for each queue item
          *
          * @param item queue item
-         * @throws IOException
+         * @throws IOException exception thrown if IO error occurs
          */
         public void forEach(byte[] item) throws IOException;
     }

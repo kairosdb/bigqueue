@@ -235,7 +235,7 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 
 	/**
 	 * thread unsafe, caller need synchronization
-	 * @throws IOException 
+	 * @throws IOException exception thrown if IO error occurs
 	 */
 	@Override
 	public void deletePagesBefore(long timestamp) throws IOException {

@@ -19,7 +19,7 @@ import org.kariosdb.bigqueue.utils.FolderNameValidator;
  *  
  * Main features:
  * 1. FAST : close to the speed of direct memory access, both enqueue and dequeue are close to O(1) memory access.
- * 2. MEMORY-EFFICIENT : automatic paging & swapping algorithm, only most-recently accessed data is kept in memory.
+ * 2. MEMORY-EFFICIENT : automatic paging and swapping algorithm, only most-recently accessed data is kept in memory.
  * 3. THREAD-SAFE : multiple threads can concurrently enqueue and dequeue without data corruption.
  * 4. PERSISTENT - all data in queue is persisted on disk, and is crash resistant.
  * 5. BIG(HUGE) - the total size of the queued data is only limited by the available disk space.
@@ -97,7 +97,13 @@ public class FanOutQueueImpl implements IFanOutQueue {
 			this.innerArray.arrayReadLock.unlock();
 		}
 	}
-	
+
+	@Override
+	public boolean isEmpty(String fanoutId) throws IOException
+	{
+		return isEmpty(fanoutId, false);
+	}
+
 	@Override
 	public boolean isEmpty() {
 		return this.innerArray.isEmpty();

@@ -40,7 +40,7 @@ public interface IMappedPageFactory {
 	/**
 	 * Current set page directory.
 	 * 
-	 * @return
+	 * @return directory name
 	 */
 	String getPageDir();
 	
@@ -60,7 +60,7 @@ public interface IMappedPageFactory {
 	 * delete back files.
 	 * 
 	 * @param indexes the indexes of the pages
-	 * @throws IOException
+	 * @throws IOException exception thrown if IO error occurs
 	 */
 	void deletePages(Set<Long> indexes) throws IOException;
 	
@@ -107,6 +107,7 @@ public interface IMappedPageFactory {
 	 * Get last modified timestamp of page file index
 	 * 
 	 * @param index page index
+	 * @return last modified time
 	 */
 	long getPageFileLastModifiedTime(long index);
 	

@@ -23,8 +23,8 @@ import org.slf4j.LoggerFactory;
  * Simple and thread-safe LRU cache implementation, 
  * supporting time to live and reference counting for entry.
  * 
- * in current implementation, entry expiration and purge(mark&sweep) is triggered by put operation,
- * and resource closing after mark&sweep is done in async way.  
+ * in current implementation, entry expiration and purge(mark and sweep) is triggered by put operation,
+ * and resource closing after mark and sweep is done in async way.
  * 
  * @author bulldog
  *

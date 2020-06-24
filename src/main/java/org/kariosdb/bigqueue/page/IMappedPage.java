@@ -30,7 +30,7 @@ public interface IMappedPage {
 	/**
 	 * Check if this mapped page has been closed or not
 	 * 
-	 * @return
+	 * @return returns true if closed
 	 */
 	boolean isClosed();
 
@@ -43,14 +43,14 @@ public interface IMappedPage {
 	/**
 	 * Set if the mapped page has been changed or not
 	 * 
-	 * @param dirty
+	 * @param dirty dirty flag to set
 	 */
 	void setDirty(boolean dirty);
 	
 	/**
 	 * The back page file name of the mapped page
 	 * 
-	 * @return
+	 * @return name of page file
 	 */
 	String getPageFile();
 	
