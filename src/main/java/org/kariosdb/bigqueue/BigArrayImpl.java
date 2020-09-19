@@ -588,27 +588,22 @@ public class BigArrayImpl implements IBigArray {
 
         long dif = high - low;
         mid = (dif / 2) + low;
-		System.out.println(low + " " + mid + " " + high);
-        
+
     	long midTimestamp = this.getTimestamp(mid);
-		System.out.println("mid time "+ midTimestamp +" looking for "+timestamp);
-    	
+
     	if (midTimestamp < timestamp) {
     		long nextLow = mid + 1;
     		if (nextLow >= high) {
-		      System.out.println(low + " " + mid + " " + high);
     			return mid;
     		}
     		return closestBinarySearch(mid, high, timestamp);
     	} else if (midTimestamp > timestamp) {
     		long nextHigh = mid - 1;
     		if (nextHigh <= low) {
-		      System.out.println(low + " " + mid + " " + high);
     			return low;
     		}
     		return closestBinarySearch(low, mid, timestamp);
     	} else {
-	      System.out.println(low + " " + mid + " " + high);
     		return mid;
     	}
 	}

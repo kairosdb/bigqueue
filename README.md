@@ -1,9 +1,10 @@
 # Big Queue
 
-
 A big, fast and persistent queue based on memory mapped file.
 
-***Notice***, bigqueue is just a standalone library, for a high-throughput, persistent, distributed, publish-subscrible messaging system, please refer to [Luxun](https://github.com/bulldog2011/luxun), Luxun messaging system uses bigqueue internally as fast and persistent queue. 
+***Notice***, bigqueue is just a standalone library, for a high-throughput, persistent, distributed, publish-subscrible messaging system, please refer to [Luxun](https://github.com/bulldog2011/luxun), Luxun messaging system uses bigqueue internally as fast and persistent queue.
+
+***Double Notice***, I (Owner of Kairosdb) have forked this code with the intention of maintaining it.  It is some amazing code and it has been neglected for a few years.  BigQueue is a critical part of KairosDB and in other projects I've created. 
 
 ##Feature Highlight:  
 1. **Fast**: close to the speed of direct memory access, both enqueue and dequeue are close to O(1) memory access.  
@@ -14,6 +15,7 @@ A big, fast and persistent queue based on memory mapped file.
 6. **Memory-efficient**: automatic paging & swapping algorithm, only most-recently accessed data is kept in memory.  
 7. **Thread-safe**: multiple threads can concurrently enqueue and dequeue without data corruption.  
 8. **Simple&Light-weight**: current number of source files is 12 and the library jar is less than 30K.
+9. **Metrics**: queue metrics provided by [metrics4j](https://github.com/kairosdb/metrics4j).
 
 
 ## The Big Picture
@@ -34,21 +36,17 @@ Suppose the average message size is 1KB, then big queue can concurrently produci
 
 ##How to Use
 1. Direct jar or source reference  
-Download jar from repository mentioned in version history section below, latest stable release is [0.7.0](https://github.com/bulldog2011/bulldog-repo/tree/master/repo/releases/com/leansoft/bigqueue/0.7.0).   
+Download jar from the github release section.   
 ***Note*** : bigqueue depends on log4j, please also added log4j jar reference if you use bigqueue.
 
 2. Maven reference  
 
 		<dependency>
-		  <groupId>com.leansoft</groupId>
+		  <groupId>org.kairosdb</groupId>
 		  <artifactId>bigqueue</artifactId>
-          <version>0.7.0</version>
+		  <version>1.0.0</version>
 		</dependency>
 		
-		<repository>
-		  <id>github.release.repo</id>
-		  <url>https://raw.github.com/bulldog2011/bulldog-repo/master/repo/releases/</url>
-		</repository>
 
 
 ##Docs
@@ -64,6 +62,10 @@ Download jar from repository mentioned in version history section below, latest 
 9. [a big, fast and persistent queue[ppt]](http://www.slideshare.net/yang75108/a-big-fast-and-persistent-queue)
 
 ## Version History
+
+#### 1.0.0 - *June 23, 2020* : 
+  * Full code review and fixed a few bugs found along the way
+  * Added metrics4j 
 
 #### 0.7.0 - *March 24, 2013* : [repository](https://github.com/bulldog2011/bulldog-repo/tree/master/repo/releases/com/leansoft/bigqueue/0.7.0)
   * Feature: support fanout queue semantics
