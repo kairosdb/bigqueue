@@ -153,8 +153,14 @@ public class BigQueueImpl implements IBigQueue {
     public void removeAll() throws IOException {
         try {
             queueFrontWriteLock.lock();
-            this.innerArray.removeAll();
+            // https://github.com/bulldog2011/bigqueue/issues/24
+            // if some thread access queueFrontIndex.get() without queueFrontWriteLock, 
+            // then this could be a problem.
+            // you should clear queueFrontIndex first (peek or dequeue)
+            // before remove all the innerArray
             this.queueFrontIndex.set(0L);
+            this.innerArray.removeAll();
+            
             IMappedPage queueFrontIndexPage = this.queueFrontIndexPageFactory.acquirePage(QUEUE_FRONT_PAGE_INDEX);
             ByteBuffer queueFrontIndexBuffer = queueFrontIndexPage.getLocal(0);
             queueFrontIndexBuffer.putLong(0L);
