@@ -468,11 +468,11 @@ public class BigArrayImpl implements IBigArray {
 	void validateIndex(long index) {
 		if (this.arrayTailIndex.get() <= this.arrayHeadIndex.get()) {
 			if (index < this.arrayTailIndex.get() || index >= this.arrayHeadIndex.get()) {
-				throw new IndexOutOfBoundsException();
+				throw new IndexOutOfBoundsException("Index "+index+" is out of bounds ["+this.arrayTailIndex.get()+" - "+this.arrayHeadIndex.get()+"]");
 			}
 		} else {
 			if (index < this.arrayTailIndex.get() && index >= this.arrayHeadIndex.get()) {
-				throw new IndexOutOfBoundsException();
+				throw new IndexOutOfBoundsException("Index "+index+" is out of bounds ["+this.arrayTailIndex.get()+" - "+this.arrayHeadIndex.get()+"]");
 			}
 		}
 	}
