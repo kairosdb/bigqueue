@@ -44,7 +44,7 @@ Download jar from the github release section.
 		<dependency>
 		  <groupId>org.kairosdb</groupId>
 		  <artifactId>bigqueue</artifactId>
-		  <version>1.0.0</version>
+		  <version>1.0.2</version>
 		</dependency>
 		
 
@@ -62,6 +62,9 @@ Download jar from the github release section.
 9. [a big, fast and persistent queue[ppt]](http://www.slideshare.net/yang75108/a-big-fast-and-persistent-queue)
 
 ## Version History
+
+#### 1.0.2 - *Aug 03, 2022* :
+  * Fixed index out of bounds race condition
 
 #### 1.0.0 - *June 23, 2020* : 
   * Full code review and fixed a few bugs found along the way
