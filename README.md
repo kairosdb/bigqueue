@@ -22,7 +22,7 @@ A big, fast and persistent queue based on memory mapped file.
 
 ### Memory Mapped Sliding Window
 
-![design](http://bulldog2011.github.com/images/luxun/sliding_window.png)
+![design](http://bulldog2011.github.io/images/luxun/sliding_window.png)
 
 
 ## Performance Highlight:
@@ -51,14 +51,14 @@ Download jar from the github release section.
 
 ## Docs
 
-1. [a simple design doc](http://bulldog2011.github.com/blog/2013/01/23/big-queue-design/)
-2. [big queue tutorial](http://bulldog2011.github.com/blog/2013/01/24/big-queue-tutorial/)
-3. [fanout queue tutorial](http://bulldog2011.github.com/blog/2013/03/25/fanout-queue-tutorial/)
-4. [big array tutorial](http://bulldog2011.github.com/blog/2013/01/24/big-array-tutorial/)
-5. [how to turn big queue into a thrift based queue service](http://bulldog2011.github.com/blog/2013/01/27/thrift-queue/)
-6. [use case : producing and consuming 4TB log daily on one commodity machine](http://bulldog2011.github.com/blog/2013/01/28/log-collecting/)
-7. [use case : sort and search 100GB data on a single commodity machine](http://bulldog2011.github.com/blog/2013/01/25/merge-sort-using-big-queue/)
-8. [the architecture and design of a pub-sub messaging system tailored for big data collecting and analytics](http://bulldog2011.github.com/blog/2013/03/27/the-architecture-and-design-of-a-pub-sub-messaging-system/)
+1. [a simple design doc](http://bulldog2011.github.io/blog/2013/01/23/big-queue-design/)
+2. [big queue tutorial](http://bulldog2011.github.io/blog/2013/01/24/big-queue-tutorial/)
+3. [fanout queue tutorial](http://bulldog2011.github.io/blog/2013/03/25/fanout-queue-tutorial/)
+4. [big array tutorial](http://bulldog2011.github.io/blog/2013/01/24/big-array-tutorial/)
+5. [how to turn big queue into a thrift based queue service](http://bulldog2011.github.io/blog/2013/01/27/thrift-queue/)
+6. [use case : producing and consuming 4TB log daily on one commodity machine](http://bulldog2011.github.io/blog/2013/01/28/log-collecting/)
+7. [use case : sort and search 100GB data on a single commodity machine](http://bulldog2011.github.io/blog/2013/01/25/merge-sort-using-big-queue/)
+8. [the architecture and design of a pub-sub messaging system tailored for big data collecting and analytics](http://bulldog2011.github.io/blog/2013/03/27/the-architecture-and-design-of-a-pub-sub-messaging-system/)
 9. [a big, fast and persistent queue[ppt]](http://www.slideshare.net/yang75108/a-big-fast-and-persistent-queue)
 
 ## Version History
