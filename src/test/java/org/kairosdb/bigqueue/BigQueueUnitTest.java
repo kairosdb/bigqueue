@@ -487,7 +487,7 @@ public class BigQueueUnitTest {
 	@After
 	public void clean() throws IOException {
 		if (bigQueue != null) {
-			//bigQueue.removeAll();
+			bigQueue.removeAll();
 		}
 	}
 
