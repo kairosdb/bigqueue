@@ -200,7 +200,7 @@ public class BigQueueImpl implements IBigQueue {
             }
 
             long index = this.queueFrontIndex.get();
-            for (long i = index; i < this.innerArray.size(); i++) {
+            for (long i = index; i < this.innerArray.getHeadIndex(); i++) {
                 iterator.forEach(this.innerArray.get(i));
             }
         } finally {
