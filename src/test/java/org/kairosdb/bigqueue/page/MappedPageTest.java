@@ -1,6 +1,5 @@
 package org.kairosdb.bigqueue.page;
 
-import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,6 +17,9 @@ import org.junit.Test;
 import org.kairosdb.bigqueue.TestUtil;
 import org.kairosdb.bigqueue.utils.FileUtil;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Fail.fail;
+
 public class MappedPageTest {
 	
 	private IMappedPageFactory mappedPageFactory;
@@ -29,18 +31,18 @@ public class MappedPageTest {
 		mappedPageFactory = new MappedPageFactoryImpl(pageSize, testDir + "/test_single_thread", 2 * 1000);
 		
 		IMappedPage mappedPage = this.mappedPageFactory.acquirePage(0);
-		assertNotNull(mappedPage);
+		assertThat(mappedPage).isNotNull();
 		
 		ByteBuffer buffer = mappedPage.getLocal(0);
-		assertTrue(buffer.limit() == pageSize);
-		assertTrue(buffer.position() == 0);
+		assertThat(buffer.limit()).isEqualTo(pageSize);
+		assertThat(buffer.position()).isEqualTo(0);
 		
 		
 		for(int i = 0; i < 10000; i++) {
 			String hello = "hello world";
 			int length = hello.getBytes().length;
 			mappedPage.getLocal(i * 20).put(hello.getBytes());
-			assertTrue(Arrays.equals(mappedPage.getLocal(i * 20 , length), hello.getBytes()));
+			assertThat(mappedPage.getLocal(i * 20 , length)).isEqualTo(hello.getBytes());
 		}
 		
 		buffer = ByteBuffer.allocateDirect(16);
@@ -53,12 +55,52 @@ public class MappedPageTest {
 		}
 		for(int i = 0; i < 10000; i++) {
 			ByteBuffer buf = mappedPage.getLocal(i * 20);
-			assertTrue(1 == buf.getInt());
-			assertTrue(2 == buf.getInt());
-			assertTrue(3L == buf.getLong());
+			assertThat(buf.getInt()).isEqualTo(1);
+			assertThat(buf.getInt()).isEqualTo(2);
+			assertThat(buf.getLong()).isEqualTo(3L);
 		}
 	}
-	
+
+	@Test
+	public void testSingleThreadMultiBuffer() throws IOException {
+		int pageSize = 1024 * 1024 * 32;
+		mappedPageFactory = new MappedPageFactoryImpl(pageSize, testDir + "/test_single_thread", 2 * 1000);
+
+		IMappedPage mappedPage1 = this.mappedPageFactory.acquirePage(0);
+		assertThat(mappedPage1).isNotNull();
+
+		ByteBuffer buffer = mappedPage1.getLocal(0);
+		assertThat(buffer.limit()).isEqualTo(pageSize);
+		assertThat(buffer.position()).isEqualTo(0);
+
+		IMappedPage mappedPage2 = this.mappedPageFactory.acquirePage(1);
+		assertThat(mappedPage2).isNotNull();
+
+		ByteBuffer buffer2 = mappedPage2.getLocal(0);
+		assertThat(buffer2.limit()).isEqualTo(pageSize);
+		assertThat(buffer2.position()).isEqualTo(0);
+
+		String hello1 = "hello world 1";
+		String hello2 = "hello world 2";
+		int length1 = hello1.getBytes().length;
+		int length2 = hello2.getBytes().length;
+
+		//Write to both buffers
+		for(int i = 0; i < 10000; i++)
+		{
+			mappedPage1.getLocal(i * 20).put(hello1.getBytes());
+			mappedPage2.getLocal(i * 20).put(hello2.getBytes());
+		}
+
+		//Read data from both to make sure they are right
+		for (int i = 0; i < 10000; i++)
+		{
+			assertThat(mappedPage1.getLocal(i * 20 , length1)).isEqualTo(hello1.getBytes());
+			assertThat(mappedPage2.getLocal(i * 20 , length2)).isEqualTo(hello2.getBytes());
+		}
+
+	}
+
 	@Test
 	public void testMultiThreads() {
 		int pageSize = 1024 * 1024 * 32;
@@ -86,8 +128,8 @@ public class MappedPageTest {
 			}
 		}
 		
-		assertTrue(localBufferList.size() == threadNum * pageNumLimit);
-		assertTrue(pageSet.size() == pageNumLimit);
+		assertThat(localBufferList.size()).isEqualTo(threadNum * pageNumLimit);
+		assertThat(pageSet.size()).isEqualTo(pageNumLimit);
 		
 		// verify thread locality
 		for(int i = 0; i < localBufferList.size(); i++) {
@@ -100,11 +142,11 @@ public class MappedPageTest {
 	}
 	
 	private static class Worker extends Thread {
-		private int id;
-		private int pageNumLimit;
-		private IMappedPageFactory pageFactory;
-		private Set<IMappedPage> sharedPageSet;
-		private List<ByteBuffer> localBufferList;
+		private final int id;
+		private final int pageNumLimit;
+		private final IMappedPageFactory pageFactory;
+		private final Set<IMappedPage> sharedPageSet;
+		private final List<ByteBuffer> localBufferList;
 		
 		public Worker(int id, IMappedPageFactory pageFactory, int pageNumLimit, 
 				Set<IMappedPage> sharedPageSet, List<ByteBuffer> localBufferList) {
@@ -124,12 +166,14 @@ public class MappedPageTest {
 					localBufferList.add(page.getLocal(0));
 					
 					int startPosition = this.id * 2048;
-					
+
 					for(int j = 0; j < 100; j++) {
 						String helloj = "hello world " + j;
 						int length = helloj.getBytes().length;
 						page.getLocal(startPosition + j * 20).put(helloj.getBytes());
-						assertTrue(Arrays.equals(page.getLocal(startPosition + j * 20 , length), helloj.getBytes()));
+
+						assertThat(page.getLocal(startPosition + j * 20, length)).isEqualTo(helloj.getBytes());
+
 					}
 					
 					ByteBuffer buffer = ByteBuffer.allocateDirect(16);
@@ -142,9 +186,9 @@ public class MappedPageTest {
 					}
 					for(int j = 0; j < 100; j++) {
 						ByteBuffer buf = page.getLocal(startPosition + j * 20);
-						assertTrue(1 == buf.getInt());
-						assertTrue(2 == buf.getInt());
-						assertTrue(3L == buf.getLong());
+						assertThat(buf.getInt()).isEqualTo(1);
+						assertThat(buf.getInt()).isEqualTo(2);
+						assertThat(buf.getLong()).isEqualTo(3L);
 					}
 					
 				} catch (IOException e) {

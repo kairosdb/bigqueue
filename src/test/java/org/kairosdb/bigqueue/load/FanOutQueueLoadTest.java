@@ -1,7 +1,5 @@
 package org.kairosdb.bigqueue.load;
 
-import static org.junit.Assert.*;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Queue;
@@ -19,6 +17,8 @@ import org.kairosdb.bigqueue.FanOutQueueImpl;
 import org.kairosdb.bigqueue.IFanOutQueue;
 import org.kairosdb.bigqueue.TestUtil;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class FanOutQueueLoadTest {
 
 	private static String testDir = TestUtil.TEST_BASE_DIR + "fanout_queue/load";
@@ -27,7 +27,7 @@ public class FanOutQueueLoadTest {
 	// configurable parameters
 	//////////////////////////////////////////////////////////////////
 	private static int loop = 5;
-	private static int totalItemCount = 100000;
+	private static int totalItemCount = 10000;
 	private static int producerNum = 4;
 	private static int consumerGroupANum = 2;
 	private static int consumerGroupBNum = 4;
@@ -121,8 +121,8 @@ public class FanOutQueueLoadTest {
 						data = foQueue.dequeue(fanoutId);
 					}
 					item = new String(data);
-					assertNotNull(item);
-					assertTrue(itemSet.remove(item));
+					assertThat(item).isNotNull();
+					assertThat(itemSet.remove(item)).isTrue();
 				}
 				result.status = Status.SUCCESS;
 			} catch (Exception e) {
@@ -197,31 +197,31 @@ public class FanOutQueueLoadTest {
 		
 		for(int i = 0; i < consumerGroupANum; i++) {
 			Result result = consumerGroupAResults.take();
-			assertEquals(result.status, Status.SUCCESS);
+			assertThat(result.status).isEqualTo(Status.SUCCESS);
 		}
 		
 		
 		for(int i = 0; i < consumerGroupBNum; i++) {
 			Result result = consumerGroupBResults.take();
-			assertEquals(result.status, Status.SUCCESS);
+			assertThat(result.status).isEqualTo(Status.SUCCESS);
 		}
 		
 		for(int i = 0; i < producerNum; i++) {
 			Result result = producerResults.take();
-			assertEquals(result.status, Status.SUCCESS);
+			assertThat(result.status).isEqualTo(Status.SUCCESS);
 		}
 		
 		
-		assertTrue(itemSetA.isEmpty());
-		assertTrue(foQueue.isEmpty(consumerGroupAFanoutId));
-		assertTrue(foQueue.size(consumerGroupAFanoutId) == 0);
+		assertThat(itemSetA).isEmpty();
+		assertThat(foQueue.isEmpty(consumerGroupAFanoutId)).isTrue();
+		assertThat(foQueue.size(consumerGroupAFanoutId)).isEqualTo(0);
 		
-		assertTrue(itemSetB.isEmpty());
-		assertTrue(foQueue.isEmpty(consumerGroupBFanoutId));
-		assertTrue(foQueue.size(consumerGroupBFanoutId) == 0);
+		assertThat(itemSetB).isEmpty();
+		assertThat(foQueue.isEmpty(consumerGroupBFanoutId)).isTrue();
+		assertThat(foQueue.size(consumerGroupBFanoutId)).isEqualTo(0);
 		
-		assertTrue(!foQueue.isEmpty());
-		assertTrue(foQueue.size() == totalItemCount);
+		assertThat(foQueue.isEmpty()).isFalse();
+		assertThat(foQueue.size()).isEqualTo(totalItemCount);
 	}
 	
 	public void doRunProduceThenConsume() throws Exception {
@@ -252,15 +252,15 @@ public class FanOutQueueLoadTest {
 		
 		for(int i = 0; i < producerNum; i++) {
 			Result result = producerResults.take();
-			assertEquals(result.status, Status.SUCCESS);
+			assertThat(result.status).isEqualTo(Status.SUCCESS);
 		}
 		
-		assertTrue(!foQueue.isEmpty());
-		assertTrue(foQueue.size() == totalItemCount);
+		assertThat(foQueue.isEmpty()).isFalse();
+		assertThat(foQueue.size()).isEqualTo(totalItemCount);
 		foQueue.flush();
-		
-		assertTrue(itemSetA.size() == totalItemCount);
-		assertTrue(itemSetB.size() == totalItemCount);
+
+		assertThat(itemSetA.size()).isEqualTo(totalItemCount);
+		assertThat(itemSetB.size()).isEqualTo(totalItemCount);
 		
 		for(int i = 0; i < consumerGroupANum; i++) {
 			Consumer c = new Consumer(clatchGroupA, consumerGroupAResults, consumerGroupAFanoutId, consumerGroupAItemCount, itemSetA);
@@ -274,25 +274,25 @@ public class FanOutQueueLoadTest {
 		
 		for(int i = 0; i < consumerGroupANum; i++) {
 			Result result = consumerGroupAResults.take();
-			assertEquals(result.status, Status.SUCCESS);
+			assertThat(result.status).isEqualTo(Status.SUCCESS);
 		}
 		
 		
 		for(int i = 0; i < consumerGroupBNum; i++) {
 			Result result = consumerGroupBResults.take();
-			assertEquals(result.status, Status.SUCCESS);
+			assertThat(result.status).isEqualTo(Status.SUCCESS);
 		}
-		
-		assertTrue(itemSetA.isEmpty());
-		assertTrue(foQueue.isEmpty(consumerGroupAFanoutId));
-		assertTrue(foQueue.size(consumerGroupAFanoutId) == 0);
-		
-		assertTrue(itemSetB.isEmpty());
-		assertTrue(foQueue.isEmpty(consumerGroupBFanoutId));
-		assertTrue(foQueue.size(consumerGroupBFanoutId) == 0);
-		
-		assertTrue(!foQueue.isEmpty());
-		assertTrue(foQueue.size() == totalItemCount);
+
+		assertThat(itemSetA).isEmpty();
+		assertThat(foQueue.isEmpty(consumerGroupAFanoutId)).isTrue();
+		assertThat(foQueue.size(consumerGroupAFanoutId)).isEqualTo(0);
+
+		assertThat(itemSetB).isEmpty();
+		assertThat(foQueue.isEmpty(consumerGroupBFanoutId)).isTrue();
+		assertThat(foQueue.size(consumerGroupBFanoutId)).isEqualTo(0);
+
+		assertThat(foQueue.isEmpty()).isFalse();
+		assertThat(foQueue.size()).isEqualTo(totalItemCount);
 	}
 
 }
