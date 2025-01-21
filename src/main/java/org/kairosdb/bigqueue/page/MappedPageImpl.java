@@ -88,7 +88,7 @@ public class MappedPageImpl implements IMappedPage, Closeable {
 	}
 	
 
-    private static class ThreadLocalByteBuffer extends ThreadLocal<ByteBuffer> {
+    private static class ThreadLocalByteBuffer /*extends ThreadLocal<ByteBuffer>*/ {
     	private ByteBuffer _src;
     	
     	public ThreadLocalByteBuffer(ByteBuffer src) {
@@ -99,11 +99,16 @@ public class MappedPageImpl implements IMappedPage, Closeable {
     		return _src;
     	}
     	
-    	@Override
+    	/*@Override
     	protected synchronized ByteBuffer initialValue() {
     		ByteBuffer dup = _src.duplicate();
     		return dup;
-    	}
+    	}*/
+
+		 public ByteBuffer get()
+		 {
+			 return _src.duplicate();
+		 }
     }
 
 	@Override
