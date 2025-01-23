@@ -2,16 +2,20 @@ package org.kairosdb.bigqueue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.LongSupplier;
 
+import org.kairosdb.bigqueue.metrics.PageFactoryStats;
 import org.kairosdb.bigqueue.page.IMappedPage;
 import org.kairosdb.bigqueue.page.IMappedPageFactory;
 import org.kairosdb.bigqueue.page.MappedPageFactoryImpl;
 import org.kairosdb.bigqueue.utils.FolderNameValidator;
+import org.kairosdb.metrics4j.MetricSourceManager;
 
 
 /**
@@ -439,6 +443,13 @@ public class FanOutQueueImpl implements IFanOutQueue {
 			this.indexPageFactory = new MappedPageFactoryImpl(QUEUE_FRONT_INDEX_PAGE_SIZE,
 					innerArray.arrayDirectory + QUEUE_FRONT_INDEX_PAGE_FOLDER_PREFIX + fanoutId, 
 					10 * 1000/*does not matter*/);
+
+			MetricSourceManager.addSource(
+					PageFactoryStats.class.getName(),
+					"pageFactoryCacheSize",
+					Map.of("name", fanoutId, "source", "FanOutQueue.queueFront"),
+					"Size of page factory cache",
+					indexPageFactory::getCacheSize);
 			
 			IMappedPage indexPage = this.indexPageFactory.acquirePage(QUEUE_FRONT_PAGE_INDEX);
 

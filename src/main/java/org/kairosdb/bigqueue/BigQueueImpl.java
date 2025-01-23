@@ -10,6 +10,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.kairosdb.bigqueue.metrics.BigQueueStats;
+import org.kairosdb.bigqueue.metrics.PageFactoryStats;
 import org.kairosdb.bigqueue.page.IMappedPage;
 import org.kairosdb.bigqueue.page.IMappedPageFactory;
 import org.kairosdb.bigqueue.page.MappedPageFactoryImpl;
@@ -88,6 +89,13 @@ public class BigQueueImpl implements IBigQueue {
                 ((BigArrayImpl) innerArray).getArrayDirectory() + QUEUE_FRONT_INDEX_PAGE_FOLDER,
                 10 * 1000/*does not matter*/);
         IMappedPage queueFrontIndexPage = this.queueFrontIndexPageFactory.acquirePage(QUEUE_FRONT_PAGE_INDEX);
+
+        MetricSourceManager.addSource(
+                PageFactoryStats.class.getName(),
+                "pageFactoryCacheSize",
+                Map.of("name", queueName, "source", "BigQueue.queueFront"),
+                "Size of page factory cache",
+                queueFrontIndexPageFactory::getCacheSize);
 
         ByteBuffer queueFrontIndexBuffer = queueFrontIndexPage.getLocal(0);
         long front = queueFrontIndexBuffer.getLong();

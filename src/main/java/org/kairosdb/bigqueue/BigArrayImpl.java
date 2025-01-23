@@ -12,6 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.kairosdb.bigqueue.metrics.BigArrayStats;
+import org.kairosdb.bigqueue.metrics.PageFactoryStats;
 import org.kairosdb.bigqueue.page.IMappedPage;
 import org.kairosdb.bigqueue.page.IMappedPageFactory;
 import org.kairosdb.bigqueue.page.MappedPageFactoryImpl;
@@ -192,6 +193,27 @@ public class BigArrayImpl implements IBigArray {
 		this.metaPageFactory = new MappedPageFactoryImpl(META_DATA_PAGE_SIZE, 
 				this.arrayDirectory + META_DATA_PAGE_FOLDER, 
 				10 * 1000/*does not matter*/);
+
+		MetricSourceManager.addSource(
+				PageFactoryStats.class.getName(),
+				"pageFactoryCacheSize",
+				Map.of("name", arrayName, "source", "BigArray.indexPage"),
+				"Size of page factory cache",
+				indexPageFactory::getCacheSize);
+
+		MetricSourceManager.addSource(
+				PageFactoryStats.class.getName(),
+				"pageFactoryCacheSize",
+				Map.of("name", arrayName, "source", "BigArray.dataPage"),
+				"Size of page factory cache",
+				dataPageFactory::getCacheSize);
+
+		MetricSourceManager.addSource(
+				PageFactoryStats.class.getName(),
+				"pageFactoryCacheSize",
+				Map.of("name", arrayName, "source", "BigArray.metaPage"),
+				"Size of page factory cache",
+				metaPageFactory::getCacheSize);
 		
 		// initialize array indexes
 		initArrayIndex();
