@@ -52,7 +52,7 @@ public interface IMappedPageFactory {
 	 * @param index the index of the page
 	 * @throws IOException exception thrown if there was any IO error during the delete operation.
 	 */
-	void deletePage(long index) throws IOException;
+	boolean deletePage(long index) throws IOException;
 	
 	/**
 	 * delete mapped pages with a set of specific indexes in this factory,

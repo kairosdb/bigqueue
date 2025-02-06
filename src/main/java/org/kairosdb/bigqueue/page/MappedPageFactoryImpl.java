@@ -14,11 +14,13 @@ import java.util.TreeSet;
 
 import org.kairosdb.bigqueue.cache.ILRUCache;
 import org.kairosdb.bigqueue.cache.LRUCacheImpl;
+import org.kairosdb.bigqueue.metrics.PageFactoryStats;
 import org.kairosdb.bigqueue.utils.FileUtil;
 import org.kairosdb.bigqueue.utils.Clock;
 import org.kairosdb.bigqueue.utils.FileFactory;
 import org.kairosdb.bigqueue.utils.FileSystemFileFactory;
 import org.kairosdb.bigqueue.utils.SystemClockImpl;
+import org.kairosdb.metrics4j.MetricSourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,11 +39,12 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 public class MappedPageFactoryImpl implements IMappedPageFactory {
 	
 	private final static Logger logger = LoggerFactory.getLogger(MappedPageFactoryImpl.class);
+	private final static PageFactoryStats stats = MetricSourceManager.getSource(PageFactoryStats.class);
 	
 	private int pageSize;
 	private String pageDir;
 	private File pageDirFile;
-	private String pageFile;
+	protected String pageFile;
 	private long ttl;
 	
 	private final Object mapLock = new Object();
@@ -53,7 +56,7 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 	private ILRUCache<Long, MappedPageImpl> cache;
 	private final FileFactory fileFactory;
 	
-	public MappedPageFactoryImpl(int pageSize, String pageDir, long cacheTTL, Clock clock, FileFactory fileFactory) {
+	protected MappedPageFactoryImpl(int pageSize, String pageDir, long cacheTTL, Clock clock, FileFactory fileFactory) {
 		this.pageSize = pageSize;
 		this.pageDir = pageDir;
 		this.ttl = cacheTTL;
@@ -69,9 +72,18 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 		this.cache = new LRUCacheImpl<>(clock);
 	}
 
-	public MappedPageFactoryImpl(int pageSize, String pageDir, long cacheTTL)
+	protected MappedPageFactoryImpl(int pageSize, String pageDir, long cacheTTL)
 	{
 		this(pageSize, pageDir, cacheTTL, new SystemClockImpl(), new FileSystemFileFactory());
+	}
+
+	public static IMappedPageFactory buildFactory(int pageSize, String pageDir, long cacheTTL)
+	{
+		String rungc = System.getProperty("BIGQUEUE_RUNGC", "false");
+		if ("true".equalsIgnoreCase(rungc))
+			return new GCMappedPageFactoryImpl(pageSize, pageDir, cacheTTL);
+		else
+			return new MappedPageFactoryImpl(pageSize, pageDir, cacheTTL);
 	}
 
 	public IMappedPage acquirePage(long index) throws IOException {
@@ -176,9 +188,10 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 	 * thread unsafe, caller need synchronization
 	 */
 	@Override
-	public void deletePage(long index) throws IOException {
+	public boolean deletePage(long index) throws IOException {
 		// remove the page from cache first
 		cache.remove(index);
+		stats.pageFilesDeleted(pageFile).put(1);
 		String fileName = this.getFileNameByIndex(index);
 		int count = 0;
 		int maxRound = 10;
@@ -204,6 +217,8 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 		} else {
 			logger.warn("fail to delete file " + fileName + " after max " + maxRound + " rounds of try, you may delete it manually.");
 		}
+
+		return deleted;
 	}
 
 	@Override
