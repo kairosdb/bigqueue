@@ -44,10 +44,20 @@ Download jar from the github release section.
 		<dependency>
 		  <groupId>org.kairosdb</groupId>
 		  <artifactId>bigqueue</artifactId>
-		  <version>1.0.2</version>
+		  <version>1.0.5</version>
 		</dependency>
 		
 
+### Note on potential file handle leaks
+BigQueue uses memory mapped files in java.  The file is mapped to a ByteBuffer which is used
+to access the file.  There is no close method on a ByteBuffer so the only way the file 
+handle is closed is when the object is cleaned up via java GC run.  In some cases
+the underlying file can be deleted but the file handle is still open.  On linux
+deleting the file just unlinks it but if the file handle is still open the file 
+will still be taking up space on the drive.  For applications that do not churn their 
+memory fast enough to clean up these objects you can set the system property `-DBIGQUEUE_RUNGC=true`
+and after a page file on disk is deleted a GC run will be done.  This has been
+tested and works with the G1GC.
 
 ## Docs
 
@@ -62,6 +72,17 @@ Download jar from the github release section.
 9. [a big, fast and persistent queue[ppt]](http://www.slideshare.net/yang75108/a-big-fast-and-persistent-queue)
 
 ## Version History
+
+#### 1.0.5 - *Feb 06, 2024* :
+  * Removed unnecessary use of thread local data to prevent file handle leaks
+  * Added conditional GC run after deleting files to prevent file handle leaks
+
+#### 1.0.4 - *Nov 20, 2024* :
+  * Updated to jdk 11
+  * Removed code accessing private java methods
+
+#### 1.0.3 - *Oct 13, 2022* :
+  * Merged pull request https://github.com/kairosdb/bigqueue/pull/2
 
 #### 1.0.2 - *Aug 03, 2022* :
   * Fixed index out of bounds race condition
