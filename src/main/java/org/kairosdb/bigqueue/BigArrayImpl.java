@@ -413,9 +413,14 @@ public class BigArrayImpl implements IBigArray {
 //			try {
 //				appendLock.lock(); // make flush and append mutually exclusive
 				
-				this.metaPageFactory.flush();
-				this.indexPageFactory.flush();
+				// Force in reverse publication order: the data an index item points at, then the
+				// index item, then the head index that publishes it. A crash part-way through then
+				// leaves entries that are simply not yet visible, rather than visible entries whose
+				// content never reached disk - the latter cannot be dropped, because every removal
+				// API works from the tail.
 				this.dataPageFactory.flush();
+				this.indexPageFactory.flush();
+				this.metaPageFactory.flush();
 				
 //			} finally {	
 //				appendLock.unlock();
